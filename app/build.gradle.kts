@@ -5,11 +5,7 @@ plugins {
 
 android {
     namespace = "com.example.myapplication"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 36  // ✅ 이렇게 수정
 
     defaultConfig {
         applicationId = "com.example.myapplication"
@@ -17,7 +13,6 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -49,6 +44,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     testImplementation(libs.junit)
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.foundation:foundation-layout")
+    implementation("androidx.compose.material:material-icons-extended")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
