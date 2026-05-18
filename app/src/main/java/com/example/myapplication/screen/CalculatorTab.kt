@@ -17,25 +17,33 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.component.HealthCard
+import com.example.myapplication.domain.ActivityLevel
 import com.example.myapplication.domain.BmiCalculator
 import com.example.myapplication.domain.BmiRecord
 
 @Composable
 fun CalculatorTab(
     latestRecord: BmiRecord?,
+    selectedActivity: ActivityLevel?,
+    onActivitySelected: (ActivityLevel?) -> Unit,
     onBmiCalculated: (BmiRecord) -> Unit
 ) {
     var heightText by remember { mutableStateOf("") }
@@ -45,6 +53,13 @@ fun CalculatorTab(
     var errorMessage by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
+    var resultCardOffset by remember { mutableIntStateOf(0) }
+
+    val tdee = latestRecord?.let { record ->
+        selectedActivity?.let { activity ->
+            (record.bmr * activity.factor).toInt()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -53,23 +68,12 @@ fun CalculatorTab(
             .padding(20.dp)
             .padding(bottom = 48.dp)
     ) {
-        HealthCard(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "▦",
-                    style = MaterialTheme.typography.titleLarge
-                )
-
+        // 신체 데이터 입력 카드
+        HealthCard(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "▦", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.width(12.dp))
-
-                Text(
-                    text = "신체 데이터를 입력하거라",
-                    style = MaterialTheme.typography.titleLarge
-                )
+                Text(text = "신체 데이터를 입력하거라", style = MaterialTheme.typography.titleLarge)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -82,79 +86,51 @@ fun CalculatorTab(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            Text(
-                text = "키 (cm)",
-                style = MaterialTheme.typography.titleMedium
-            )
-
+            Text(text = "키 (cm)", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-
             OutlinedTextField(
                 value = heightText,
                 onValueChange = { heightText = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                )
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = "몸무게 (kg)",
-                style = MaterialTheme.typography.titleMedium
-            )
-
+            Text(text = "몸무게 (kg)", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-
             OutlinedTextField(
                 value = weightText,
                 onValueChange = { weightText = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                )
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = "나이",
-                style = MaterialTheme.typography.titleMedium
-            )
-
+            Text(text = "나이", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-
             OutlinedTextField(
                 value = ageText,
                 onValueChange = { ageText = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                )
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = "성별",
-                style = MaterialTheme.typography.titleMedium
-            )
-
+            Text(text = "성별", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-
             Row {
                 FilterChip(
                     selected = selectedGender == "남성",
                     onClick = { selectedGender = "남성" },
                     label = { Text("남성") }
                 )
-
                 Spacer(modifier = Modifier.width(8.dp))
-
                 FilterChip(
                     selected = selectedGender == "여성",
                     onClick = { selectedGender = "여성" },
@@ -167,27 +143,25 @@ fun CalculatorTab(
             Button(
                 onClick = {
                     val gender = selectedGender
-
                     if (gender == null) {
                         errorMessage = "성별을 선택하세요."
                         return@Button
                     }
-
                     val result = BmiCalculator.calculate(
                         heightCmText = heightText,
                         weightKgText = weightText,
                         ageText = ageText,
                         gender = gender
                     )
-
                     if (result == null) {
                         errorMessage = "키, 몸무게, 나이를 올바르게 입력하세요."
                     } else {
                         errorMessage = ""
+                        onActivitySelected(null)
                         onBmiCalculated(result)
-
                         coroutineScope.launch {
-                            scrollState.animateScrollTo(scrollState.maxValue)
+                            // 결과 카드 위치로 스크롤 (결과 + 활동 수준이 동시에 보임)
+                            scrollState.animateScrollTo(resultCardOffset)
                         }
                     }
                 },
@@ -200,20 +174,20 @@ fun CalculatorTab(
 
             if (errorMessage.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = errorMessage,
-                    color = MaterialTheme.colorScheme.error
-                )
+                Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // 계산 결과 카드
         HealthCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 220.dp)
+                .onGloballyPositioned { coordinates ->
+                    resultCardOffset = coordinates.positionInParent().y.toInt()
+                }
         ) {
             if (latestRecord == null) {
                 Column(
@@ -225,39 +199,36 @@ fun CalculatorTab(
                         text = "신체 정보를 입력하고",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
                     Text(
                         text = "BMI, BMR, 체지방률을 확인하세요",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
-                Text(
-                    text = "계산 결과",
-                    style = MaterialTheme.typography.titleLarge
-                )
+                Text(text = "계산 결과", style = MaterialTheme.typography.titleLarge)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                ResultRow(
-                    label = "상태",
-                    value = latestRecord.category
-                )
+                ResultRow(label = "상태", value = latestRecord.category)
+                ResultRow(label = "BMI", value = latestRecord.bmi.toString())
+                ResultRow(label = "체지방률", value = "${latestRecord.bodyFatRate}%")
 
-                ResultRow(
-                    label = "BMI",
-                    value = latestRecord.bmi.toString()
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
 
-                ResultRow(
-                    label = "BMR ",
-                    value = "${latestRecord.bmr} kcal"
-                )
+                ResultRow(label = "최소 섭취량 (BMR)", value = "${latestRecord.bmr} kcal")
 
-                ResultRow(
-                    label = "체지방률",
-                    value = "${latestRecord.bodyFatRate}%"
-                )
+                if (tdee != null) {
+                    ResultRow(label = "권장 섭취량 (TDEE)", value = "${tdee} kcal")
+                } else {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "아래에서 활동 수준을 선택하면 권장 섭취량이 표시됩니다",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -265,6 +236,71 @@ fun CalculatorTab(
                     text = latestRecord.recommendation,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+
+        // 활동 수준 선택 카드 (계산 결과 있을 때만 표시)
+        if (latestRecord != null) {
+            Spacer(modifier = Modifier.height(24.dp))
+
+            HealthCard(modifier = Modifier.fillMaxWidth()) {
+                Text(text = "활동 수준 선택", style = MaterialTheme.typography.titleLarge)
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "선택하면 위 결과에 권장 섭취량(TDEE)이 추가됩니다",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                ActivityLevel.entries.forEach { level ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedActivity == level,
+                            onClick = { onActivitySelected(level) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = level.label,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = level.description,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+
+                if (tdee != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "권장 섭취량 (TDEE)",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "${tdee} kcal",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
         }
     }
@@ -286,10 +322,6 @@ fun ResultRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyLarge
         )
-
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge
-        )
+        Text(text = value, style = MaterialTheme.typography.bodyLarge)
     }
 }

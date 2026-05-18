@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import com.example.myapplication.component.AppHeader
 import com.example.myapplication.component.BottomNavBar
 import com.example.myapplication.component.BottomTab
+import com.example.myapplication.domain.ActivityLevel
 import com.example.myapplication.domain.BmiRecord
 
 @Composable
@@ -17,6 +18,7 @@ fun HealthFitnessScreen() {
     var selectedTab by remember { mutableStateOf(BottomTab.CALCULATOR) }
     var latestRecord by remember { mutableStateOf<BmiRecord?>(null) }
     var records by remember { mutableStateOf<List<BmiRecord>>(emptyList()) }
+    var selectedActivity by remember { mutableStateOf<ActivityLevel?>(null) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -43,6 +45,8 @@ fun HealthFitnessScreen() {
                     BottomTab.CALCULATOR -> {
                         CalculatorTab(
                             latestRecord = latestRecord,
+                            selectedActivity = selectedActivity,
+                            onActivitySelected = { selectedActivity = it },
                             onBmiCalculated = { record ->
                                 latestRecord = record
                                 records = records + record
@@ -55,7 +59,10 @@ fun HealthFitnessScreen() {
                     }
 
                     BottomTab.DIET -> {
-                        DietTab(latestRecord = latestRecord)
+                        DietTab(
+                            latestRecord = latestRecord,
+                            selectedActivity = selectedActivity
+                        )
                     }
 
                     BottomTab.HISTORY -> {
