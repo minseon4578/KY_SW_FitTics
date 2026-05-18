@@ -67,7 +67,7 @@ fun CalculatorTab(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Text(
-                    text = "신체 데이터 계산기",
+                    text = "신체 데이터를 입력하거라",
                     style = MaterialTheme.typography.titleLarge
                 )
             }
@@ -240,17 +240,17 @@ fun CalculatorTab(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 ResultRow(
-                    label = "BMI",
-                    value = latestRecord.bmi.toString()
-                )
-
-                ResultRow(
                     label = "상태",
                     value = latestRecord.category
                 )
 
                 ResultRow(
-                    label = "BMR / 기초대사량",
+                    label = "BMI",
+                    value = latestRecord.bmi.toString()
+                )
+
+                ResultRow(
+                    label = "BMR ",
                     value = "${latestRecord.bmr} kcal"
                 )
 

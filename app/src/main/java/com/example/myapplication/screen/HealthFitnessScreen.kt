@@ -51,15 +51,15 @@ fun HealthFitnessScreen() {
                     }
 
                     BottomTab.EXERCISE -> {
-                        ExerciseTab(
-                            latestRecord = latestRecord
-                        )
+                        ExerciseTab(latestRecord = latestRecord)
+                    }
+
+                    BottomTab.DIET -> {
+                        DietTab(latestRecord = latestRecord)
                     }
 
                     BottomTab.HISTORY -> {
-                        HistoryTab(
-                            records = records
-                        )
+                        HistoryTab(records = records)
                     }
                 }
             }
