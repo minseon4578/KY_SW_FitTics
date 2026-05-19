@@ -33,6 +33,15 @@ fun BottomNavBar(
         )
 
         NavigationBarItem(
+            selected = selectedTab == BottomTab.DIET,
+            onClick = { onTabSelected(BottomTab.DIET) },
+            icon = {
+                Icon(imageVector = Icons.Default.Restaurant, contentDescription = null)
+            },
+            label = { Text("식단") }
+        )
+
+        NavigationBarItem(
             selected = selectedTab == BottomTab.EXERCISE,
             onClick = { onTabSelected(BottomTab.EXERCISE) },
             icon = {
@@ -41,14 +50,7 @@ fun BottomNavBar(
             label = { Text("운동") }
         )
 
-        NavigationBarItem(
-            selected = selectedTab == BottomTab.DIET,
-            onClick = { onTabSelected(BottomTab.DIET) },
-            icon = {
-                Icon(imageVector = Icons.Default.Restaurant, contentDescription = null)
-            },
-            label = { Text("식단") }
-        )
+
 
         NavigationBarItem(
             selected = selectedTab == BottomTab.HISTORY,

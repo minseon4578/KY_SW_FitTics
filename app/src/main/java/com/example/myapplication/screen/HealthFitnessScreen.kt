@@ -20,6 +20,13 @@ fun HealthFitnessScreen() {
     var records by remember { mutableStateOf<List<BmiRecord>>(emptyList()) }
     var selectedActivity by remember { mutableStateOf<ActivityLevel?>(null) }
 
+    // TDEE 계산 - CalculatorTab에서 이미 계산한 값 그대로 사용
+    val tdee = latestRecord?.let { record ->
+        selectedActivity?.let { activity ->
+            (record.bmr * activity.factor).toInt()
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -54,15 +61,15 @@ fun HealthFitnessScreen() {
                         )
                     }
 
-                    BottomTab.EXERCISE -> {
-                        ExerciseTab(latestRecord = latestRecord)
-                    }
-
                     BottomTab.DIET -> {
                         DietTab(
                             latestRecord = latestRecord,
-                            selectedActivity = selectedActivity
+                            tdee = tdee
                         )
+                    }
+
+                    BottomTab.EXERCISE -> {
+                        ExerciseTab(latestRecord = latestRecord)
                     }
 
                     BottomTab.HISTORY -> {
