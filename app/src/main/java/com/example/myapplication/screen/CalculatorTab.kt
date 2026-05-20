@@ -16,16 +16,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,14 +44,21 @@ import com.example.myapplication.domain.BmiRecord
 fun CalculatorTab(
     latestRecord: BmiRecord?,
     selectedActivity: ActivityLevel?,
+    heightText: String,
+    weightText: String,
+    ageText: String,
+    selectedGender: String?,
+    isEditing: Boolean,
+    onHeightChanged: (String) -> Unit,
+    onWeightChanged: (String) -> Unit,
+    onAgeChanged: (String) -> Unit,
+    onGenderChanged: (String) -> Unit,
+    onEditingChanged: (Boolean) -> Unit,
     onActivitySelected: (ActivityLevel?) -> Unit,
-    onBmiCalculated: (BmiRecord) -> Unit
+    onBmiCalculated: (BmiRecord) -> Unit,
+    onReset: () -> Unit
 ) {
-    var heightText by remember { mutableStateOf("") }
-    var weightText by remember { mutableStateOf("") }
-    var ageText by remember { mutableStateOf("") }
-    var selectedGender by remember { mutableStateOf<String?>(null) }
-    var errorMessage by remember { mutableStateOf("") }
+    var errorMessage by remember { androidx.compose.runtime.mutableStateOf("") }
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
     var resultCardOffset by remember { mutableIntStateOf(0) }
@@ -68,12 +76,11 @@ fun CalculatorTab(
             .padding(20.dp)
             .padding(bottom = 48.dp)
     ) {
-        // 신체 데이터 입력 카드
         HealthCard(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(text = "▦", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = "신체 데이터를 입력하거라", style = MaterialTheme.typography.titleLarge)
+                Text(text = "신체 데이터를 입력하세요", style = MaterialTheme.typography.titleLarge)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -90,9 +97,10 @@ fun CalculatorTab(
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = heightText,
-                onValueChange = { heightText = it },
+                onValueChange = { if (isEditing) onHeightChanged(it) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                enabled = isEditing,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
@@ -102,9 +110,10 @@ fun CalculatorTab(
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = weightText,
-                onValueChange = { weightText = it },
+                onValueChange = { if (isEditing) onWeightChanged(it) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                enabled = isEditing,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
@@ -114,9 +123,10 @@ fun CalculatorTab(
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = ageText,
-                onValueChange = { ageText = it },
+                onValueChange = { if (isEditing) onAgeChanged(it) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                enabled = isEditing,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
@@ -127,18 +137,49 @@ fun CalculatorTab(
             Row {
                 FilterChip(
                     selected = selectedGender == "남성",
-                    onClick = { selectedGender = "남성" },
+                    onClick = { if (isEditing) onGenderChanged("남성") },
                     label = { Text("남성") }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 FilterChip(
                     selected = selectedGender == "여성",
-                    onClick = { selectedGender = "여성" },
+                    onClick = { if (isEditing) onGenderChanged("여성") },
                     label = { Text("여성") }
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 수정 / 초기화 버튼 (계산 결과 있을 때만)
+            if (latestRecord != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { onEditingChanged(true) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("수정")
+                    }
+                    Button(
+                        onClick = { onReset() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("초기화")
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = {
@@ -157,14 +198,15 @@ fun CalculatorTab(
                         errorMessage = "키, 몸무게, 나이를 올바르게 입력하세요."
                     } else {
                         errorMessage = ""
+                        onEditingChanged(false)
                         onActivitySelected(null)
                         onBmiCalculated(result)
                         coroutineScope.launch {
-                            // 결과 카드 위치로 스크롤 (결과 + 활동 수준이 동시에 보임)
                             scrollState.animateScrollTo(resultCardOffset)
                         }
                     }
                 },
+                enabled = isEditing,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -211,24 +253,8 @@ fun CalculatorTab(
 
                 ResultRow(label = "상태", value = latestRecord.category)
                 ResultRow(label = "BMI", value = latestRecord.bmi.toString())
+                ResultRow(label = "BMR (최소 섭취량)", value = "${latestRecord.bmr} kcal")
                 ResultRow(label = "체지방률", value = "${latestRecord.bodyFatRate}%")
-
-                Spacer(modifier = Modifier.height(8.dp))
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(8.dp))
-
-                ResultRow(label = "최소 섭취량 (BMR)", value = "${latestRecord.bmr} kcal")
-
-                if (tdee != null) {
-                    ResultRow(label = "권장 섭취량 (TDEE)", value = "${tdee} kcal")
-                } else {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "아래에서 활동 수준을 선택하면 권장 섭취량이 표시됩니다",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -239,7 +265,7 @@ fun CalculatorTab(
             }
         }
 
-        // 활동 수준 선택 카드 (계산 결과 있을 때만 표시)
+        // 활동 수준 선택 카드
         if (latestRecord != null) {
             Spacer(modifier = Modifier.height(24.dp))
 

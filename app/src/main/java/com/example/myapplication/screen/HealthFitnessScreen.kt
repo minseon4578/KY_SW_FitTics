@@ -20,7 +20,13 @@ fun HealthFitnessScreen() {
     var records by remember { mutableStateOf<List<BmiRecord>>(emptyList()) }
     var selectedActivity by remember { mutableStateOf<ActivityLevel?>(null) }
 
-    // TDEE 계산 - CalculatorTab에서 이미 계산한 값 그대로 사용
+    // 입력값 상태를 여기서 관리 → 탭 전환해도 유지됨
+    var heightText by remember { mutableStateOf("") }
+    var weightText by remember { mutableStateOf("") }
+    var ageText by remember { mutableStateOf("") }
+    var selectedGender by remember { mutableStateOf<String?>(null) }
+    var isEditing by remember { mutableStateOf(true) }
+
     val tdee = latestRecord?.let { record ->
         selectedActivity?.let { activity ->
             (record.bmr * activity.factor).toInt()
@@ -53,10 +59,30 @@ fun HealthFitnessScreen() {
                         CalculatorTab(
                             latestRecord = latestRecord,
                             selectedActivity = selectedActivity,
+                            heightText = heightText,
+                            weightText = weightText,
+                            ageText = ageText,
+                            selectedGender = selectedGender,
+                            isEditing = isEditing,
+                            onHeightChanged = { heightText = it },
+                            onWeightChanged = { weightText = it },
+                            onAgeChanged = { ageText = it },
+                            onGenderChanged = { selectedGender = it },
+                            onEditingChanged = { isEditing = it },
                             onActivitySelected = { selectedActivity = it },
                             onBmiCalculated = { record ->
                                 latestRecord = record
                                 records = records + record
+                            },
+                            onReset = {
+                                latestRecord = null
+                                records = emptyList()
+                                selectedActivity = null
+                                heightText = ""
+                                weightText = ""
+                                ageText = ""
+                                selectedGender = null
+                                isEditing = true
                             }
                         )
                     }

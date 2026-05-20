@@ -44,7 +44,7 @@ fun AppHeader() {
 
             Column {
                 Text(
-                    text = "Health Fitness",
+                    text = "BodySync",
                     color = MaterialTheme.colorScheme.onPrimary,
                     style = MaterialTheme.typography.headlineMedium
                 )
