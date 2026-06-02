@@ -9,5 +9,6 @@ data class BmiRecord(
     val category: String,
     val bmr: Int,
     val bodyFatRate: Double,
-    val recommendation: String
+    val recommendation: String,
+    val date: Long = System.currentTimeMillis()
 )

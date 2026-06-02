@@ -17,7 +17,24 @@ import com.example.myapplication.domain.BmiRecord
 fun HealthFitnessScreen() {
     var selectedTab by remember { mutableStateOf(BottomTab.CALCULATOR) }
     var latestRecord by remember { mutableStateOf<BmiRecord?>(null) }
-    var records by remember { mutableStateOf<List<BmiRecord>>(emptyList()) }
+    var records by remember {
+        mutableStateOf<List<BmiRecord>>(
+            listOf(
+                BmiRecord(
+                    heightCm = "170",
+                    weightKg = "70",
+                    age = "25",
+                    gender = "남성",
+                    bmi = 24.2,
+                    category = "정상",
+                    bmr = 1700,
+                    bodyFatRate = 18.5,
+                    recommendation = "균형 잡힌 식단을 유지하세요",
+                    date = System.currentTimeMillis() - 3 * 24 * 60 * 60 * 1000L
+                )
+            )
+        )
+    }
     var selectedActivity by remember { mutableStateOf<ActivityLevel?>(null) }
 
     // 입력값 상태를 여기서 관리 → 탭 전환해도 유지됨
