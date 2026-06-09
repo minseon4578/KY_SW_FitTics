@@ -150,7 +150,6 @@ fun CalculatorTab(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 수정 / 초기화 버튼 (계산 결과 있을 때만)
             if (latestRecord != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -164,6 +163,7 @@ fun CalculatorTab(
                     ) {
                         Text("수정")
                     }
+
                     Button(
                         onClick = { onReset() },
                         modifier = Modifier
@@ -176,6 +176,7 @@ fun CalculatorTab(
                         Text("초기화")
                     }
                 }
+
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
@@ -188,12 +189,14 @@ fun CalculatorTab(
                         errorMessage = "성별을 선택하세요."
                         return@Button
                     }
+
                     val result = BmiCalculator.calculate(
                         heightCmText = heightText,
                         weightKgText = weightText,
                         ageText = ageText,
                         gender = gender
                     )
+
                     if (result == null) {
                         errorMessage = "키, 몸무게, 나이를 올바르게 입력하세요."
                     } else {
@@ -222,7 +225,6 @@ fun CalculatorTab(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 계산 결과 카드
         HealthCard(
             modifier = Modifier
                 .fillMaxWidth()
@@ -253,8 +255,18 @@ fun CalculatorTab(
 
                 ResultRow(label = "상태", value = latestRecord.category)
                 ResultRow(label = "BMI", value = latestRecord.bmi.toString())
-                ResultRow(label = "BMR (최소 섭취량)", value = "${latestRecord.bmr} kcal")
+                ResultRow(label = "BMR (기초대사량)", value = "${latestRecord.bmr} kcal")
                 ResultRow(label = "체지방률", value = "${latestRecord.bodyFatRate}%")
+
+                if (tdee != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    ResultRow(label = "유지 섭취량(TDEE)", value = "$tdee kcal")
+                    ResultRow(label = "감량 목표 섭취량", value = "${(tdee - 500).coerceAtLeast(1200)} kcal")
+                    ResultRow(label = "증량 목표 섭취량", value = "${tdee + 300} kcal")
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -265,7 +277,6 @@ fun CalculatorTab(
             }
         }
 
-        // 활동 수준 선택 카드
         if (latestRecord != null) {
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -275,7 +286,7 @@ fun CalculatorTab(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "선택하면 위 결과에 권장 섭취량(TDEE)이 추가됩니다",
+                    text = "활동수준을 선택하면 위 계산 결과에 목표별 섭취량이 반영됩니다",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -293,7 +304,9 @@ fun CalculatorTab(
                             selected = selectedActivity == level,
                             onClick = { onActivitySelected(level) }
                         )
+
                         Spacer(modifier = Modifier.width(8.dp))
+
                         Column {
                             Text(
                                 text = level.label,
@@ -305,26 +318,6 @@ fun CalculatorTab(
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
-                    }
-                }
-
-                if (tdee != null) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "권장 섭취량 (TDEE)",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = "${tdee} kcal",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
                     }
                 }
             }
@@ -348,6 +341,10 @@ fun ResultRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyLarge
         )
-        Text(text = value, style = MaterialTheme.typography.bodyLarge)
+
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge
+        )
     }
 }

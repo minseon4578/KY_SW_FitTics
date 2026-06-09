@@ -39,12 +39,15 @@ fun HealthFitnessScreen() {
 
     var selectedActivity by remember { mutableStateOf<ActivityLevel?>(null) }
 
-    // 입력값 상태를 여기서 관리 → 탭 전환해도 유지됨
     var heightText by remember { mutableStateOf("") }
     var weightText by remember { mutableStateOf("") }
     var ageText by remember { mutableStateOf("") }
     var selectedGender by remember { mutableStateOf<String?>(null) }
     var isEditing by remember { mutableStateOf(true) }
+
+    var todayMealCheckedCount by remember { mutableStateOf(0) }
+    var todayExerciseCompletedCount by remember { mutableStateOf(0) }
+    var todayExerciseCalories by remember { mutableStateOf(0) }
 
     val tdee = latestRecord?.let { record ->
         selectedActivity?.let { activity ->
@@ -92,6 +95,9 @@ fun HealthFitnessScreen() {
                             onBmiCalculated = { record ->
                                 latestRecord = record
                                 records = records + record
+                                todayMealCheckedCount = 0
+                                todayExerciseCompletedCount = 0
+                                todayExerciseCalories = 0
                             },
                             onReset = {
                                 latestRecord = null
@@ -102,6 +108,9 @@ fun HealthFitnessScreen() {
                                 ageText = ""
                                 selectedGender = null
                                 isEditing = true
+                                todayMealCheckedCount = 0
+                                todayExerciseCompletedCount = 0
+                                todayExerciseCalories = 0
                             }
                         )
                     }
@@ -109,18 +118,32 @@ fun HealthFitnessScreen() {
                     BottomTab.DIET -> {
                         DietTab(
                             latestRecord = latestRecord,
-                            tdee = tdee
+                            tdee = tdee,
+                            exerciseBurnedCalories = todayExerciseCalories,
+                            onMealCheckedCountChanged = { count ->
+                                todayMealCheckedCount = count
+                            }
                         )
                     }
 
                     BottomTab.EXERCISE -> {
                         ExerciseTab(
-                            latestRecord = latestRecord
+                            latestRecord = latestRecord,
+                            onExerciseCaloriesChanged = { calories ->
+                                todayExerciseCalories = calories
+                            },
+                            onExerciseCompletedCountChanged = { count ->
+                                todayExerciseCompletedCount = count
+                            }
                         )
                     }
 
                     BottomTab.HISTORY -> {
-                        HistoryTab(records = records)
+                        HistoryTab(
+                            records = records,
+                            todayMealCheckedCount = todayMealCheckedCount,
+                            todayExerciseCompletedCount = todayExerciseCompletedCount
+                        )
                     }
                 }
             }

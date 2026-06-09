@@ -176,6 +176,24 @@ fun getTargetProtein(
     return (weight * proteinPerKg).roundToInt()
 }
 
+fun getExerciseExtraCalories(exerciseBurnedCalories: Int): Int {
+    return when {
+        exerciseBurnedCalories >= 500 -> 300
+        exerciseBurnedCalories >= 300 -> 200
+        exerciseBurnedCalories >= 150 -> 100
+        else -> 0
+    }
+}
+
+fun getExerciseExtraProtein(exerciseBurnedCalories: Int): Int {
+    return when {
+        exerciseBurnedCalories >= 500 -> 20
+        exerciseBurnedCalories >= 300 -> 15
+        exerciseBurnedCalories >= 150 -> 10
+        else -> 0
+    }
+}
+
 fun getDefaultRiceAmount(
     goal: DietGoal,
     targetCalories: Int
@@ -240,7 +258,9 @@ fun getSortedPlansByTargetCalories(
 @Composable
 fun DietTab(
     latestRecord: BmiRecord?,
-    tdee: Int?
+    tdee: Int?,
+    exerciseBurnedCalories: Int = 0,
+    onMealCheckedCountChanged: (Int) -> Unit = {}
 ) {
     val todayIndex = remember {
         java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR)
@@ -260,13 +280,25 @@ fun DietTab(
         mutableStateOf(ProteinAddition.NONE)
     }
 
-    val checkedMeals = remember(selectedGoal, selectedPlanOffset, selectedRiceAmount, selectedProteinAddition) {
+    val checkedMeals = remember(
+        selectedGoal,
+        selectedPlanOffset,
+        selectedRiceAmount,
+        selectedProteinAddition,
+        exerciseBurnedCalories
+    ) {
         mutableStateMapOf(
             "아침" to false,
             "점심" to false,
             "저녁" to false,
             "간식" to false
         )
+    }
+
+    val mealCheckedCount = checkedMeals.values.count { it }
+
+    LaunchedEffect(mealCheckedCount) {
+        onMealCheckedCountChanged(mealCheckedCount)
     }
 
     Column(
@@ -356,11 +388,19 @@ fun DietTab(
 
         val targetCalories = getTargetCalories(latestRecord, tdee, selectedGoal)
         val targetProtein = getTargetProtein(latestRecord, selectedGoal)
-        val effectiveRiceAmount = selectedRiceAmount ?: getDefaultRiceAmount(selectedGoal, targetCalories)
+
+        val exerciseExtraCalories = getExerciseExtraCalories(exerciseBurnedCalories)
+        val exerciseExtraProtein = getExerciseExtraProtein(exerciseBurnedCalories)
+
+        val adjustedTargetCalories = targetCalories + exerciseExtraCalories
+        val adjustedTargetProtein = targetProtein + exerciseExtraProtein
+
+        val effectiveRiceAmount = selectedRiceAmount
+            ?: getDefaultRiceAmount(selectedGoal, adjustedTargetCalories)
 
         val plans = getSortedPlansByTargetCalories(
             plans = getPlansByGoal(selectedGoal),
-            targetCalories = targetCalories,
+            targetCalories = adjustedTargetCalories,
             riceAmount = effectiveRiceAmount,
             proteinAddition = selectedProteinAddition
         )
@@ -393,11 +433,11 @@ fun DietTab(
                     (if (checkedMeals["저녁"] == true) dinnerProtein else 0) +
                     (if (checkedMeals["간식"] == true) snackProtein else 0)
 
-        val expectedCalorieRate = ((expectedCalories.toDouble() / targetCalories) * 100).roundToInt()
-        val expectedProteinRate = ((expectedProtein.toDouble() / targetProtein) * 100).roundToInt()
-        val actualCalorieRate = ((actualCalories.toDouble() / targetCalories) * 100).roundToInt()
-        val actualProteinRate = ((actualProtein.toDouble() / targetProtein) * 100).roundToInt()
-        val calorieGap = expectedCalories - targetCalories
+        val expectedCalorieRate = ((expectedCalories.toDouble() / adjustedTargetCalories) * 100).roundToInt()
+        val expectedProteinRate = ((expectedProtein.toDouble() / adjustedTargetProtein) * 100).roundToInt()
+        val actualCalorieRate = ((actualCalories.toDouble() / adjustedTargetCalories) * 100).roundToInt()
+        val actualProteinRate = ((actualProtein.toDouble() / adjustedTargetProtein) * 100).roundToInt()
+        val calorieGap = expectedCalories - adjustedTargetCalories
 
         HealthCard(modifier = Modifier.fillMaxWidth()) {
             Text(text = "오늘 내 기준 정보", style = MaterialTheme.typography.titleMedium)
@@ -405,16 +445,26 @@ fun DietTab(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "목표 섭취량: $targetCalories kcal",
+                text = "목표 섭취량: $adjustedTargetCalories kcal",
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.titleSmall
             )
 
             Text(
-                text = "목표 단백질: ${targetProtein}g",
+                text = "목표 단백질: ${adjustedTargetProtein}g",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall
             )
+
+            if (exerciseBurnedCalories > 0) {
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "운동 ${exerciseBurnedCalories} kcal 소모 반영 → +${exerciseExtraCalories} kcal, 단백질 +${exerciseExtraProtein}g",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
@@ -438,13 +488,13 @@ fun DietTab(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "칼로리: $expectedCalories / $targetCalories kcal (${expectedCalorieRate}%)",
+                text = "칼로리: $expectedCalories / $adjustedTargetCalories kcal (${expectedCalorieRate}%)",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall
             )
 
             Text(
-                text = "단백질: $expectedProtein / ${targetProtein}g (${expectedProteinRate}%)",
+                text = "단백질: $expectedProtein / ${adjustedTargetProtein}g (${expectedProteinRate}%)",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -469,13 +519,13 @@ fun DietTab(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "칼로리: $actualCalories / $targetCalories kcal (${actualCalorieRate}%)",
+                text = "칼로리: $actualCalories / $adjustedTargetCalories kcal (${actualCalorieRate}%)",
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodySmall
             )
 
             Text(
-                text = "단백질: $actualProtein / ${targetProtein}g (${actualProteinRate}%)",
+                text = "단백질: $actualProtein / ${adjustedTargetProtein}g (${actualProteinRate}%)",
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodySmall
             )

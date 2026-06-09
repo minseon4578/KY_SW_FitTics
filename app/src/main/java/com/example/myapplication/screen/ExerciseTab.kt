@@ -207,7 +207,8 @@ fun parseExercises(
 @Composable
 fun ExerciseTab(
     latestRecord: BmiRecord?,
-    onExerciseCaloriesChanged: (Int) -> Unit = {}
+    onExerciseCaloriesChanged: (Int) -> Unit = {},
+    onExerciseCompletedCountChanged: (Int) -> Unit = {}
 ) {
     var selectedGoal by remember(latestRecord) {
         mutableStateOf(
@@ -226,8 +227,14 @@ fun ExerciseTab(
         .filter { completedExercises.contains(it.name) }
         .sumOf { it.calories }
 
+    val completedCount = completedExercises.size
+
     LaunchedEffect(currentCalories) {
         onExerciseCaloriesChanged(currentCalories)
+    }
+
+    LaunchedEffect(completedCount) {
+        onExerciseCompletedCountChanged(completedCount)
     }
 
     fun loadExercises(levelToUse: ExerciseLevel = selectedLevel) {
