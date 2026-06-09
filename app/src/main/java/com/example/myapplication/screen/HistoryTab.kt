@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -20,6 +21,7 @@ import com.example.myapplication.domain.BmiRecord
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 fun HistoryTab(
@@ -54,6 +56,7 @@ fun HistoryTab(
     } else null
 
     val dateFormat = SimpleDateFormat("MM.dd", Locale.KOREA)
+    val fullDateFormat = SimpleDateFormat("yyyy.MM.dd", Locale.KOREA)
 
     Column(
         modifier = Modifier
@@ -62,6 +65,81 @@ fun HistoryTab(
             .padding(20.dp)
             .padding(bottom = 48.dp)
     ) {
+        HealthCard(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(imageVector = Icons.Default.Assessment, contentDescription = null)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(text = "오늘 건강 리포트", style = MaterialTheme.typography.titleLarge)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (latestRecord == null) {
+                Text(
+                    text = "아직 분석할 기록이 없습니다",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "계산 탭에서 BMI를 계산하면 오늘 리포트가 생성됩니다",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else {
+                val baseTdee = (latestRecord.bmr * 1.2).roundToInt()
+
+                val estimatedGoal = when (latestRecord.category) {
+                    "저체중" -> "체중 증량"
+                    "정상" -> "체중 유지"
+                    "과체중" -> "체중 감량"
+                    else -> "체중 감량"
+                }
+
+                val targetCalories = when (estimatedGoal) {
+                    "체중 증량" -> baseTdee + 300
+                    "체중 유지" -> baseTdee
+                    else -> (baseTdee - 500).coerceAtLeast(1200)
+                }
+
+                val weight = latestRecord.weightKg.toDoubleOrNull() ?: 70.0
+
+                val targetProtein = when (estimatedGoal) {
+                    "체중 증량" -> (weight * 1.8).roundToInt()
+                    "체중 유지" -> (weight * 1.4).roundToInt()
+                    else -> (weight * 1.6).roundToInt()
+                }
+
+                Text(
+                    text = fullDateFormat.format(Date(latestRecord.date)),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                SummaryRow(label = "현재 BMI", value = latestRecord.bmi.toString())
+                SummaryRow(label = "현재 상태", value = latestRecord.category)
+                SummaryRow(label = "추천 목표", value = estimatedGoal)
+                SummaryRow(label = "예상 권장 섭취량", value = "${targetCalories} kcal")
+                SummaryRow(label = "목표 단백질", value = "${targetProtein}g")
+                SummaryRow(label = "기초대사량", value = "${latestRecord.bmr} kcal")
+                SummaryRow(label = "체지방률", value = "${latestRecord.bodyFatRate}%")
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = latestRecord.recommendation,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         HealthCard(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = Icons.Default.ShowChart, contentDescription = null)
@@ -104,7 +182,6 @@ fun HistoryTab(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // 이전 BMI 카드
                     Card(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
@@ -130,12 +207,16 @@ fun HistoryTab(
                                     )
                                 }
                             }
+
                             Spacer(modifier = Modifier.height(8.dp))
+
                             Text(
                                 text = compareRecord?.bmi?.toString() ?: "-",
                                 style = MaterialTheme.typography.headlineLarge
                             )
+
                             Spacer(modifier = Modifier.height(4.dp))
+
                             if (compareRecord != null) {
                                 Surface(
                                     shape = RoundedCornerShape(20.dp),
@@ -158,7 +239,6 @@ fun HistoryTab(
                         }
                     }
 
-                    // 최근 BMI 카드
                     Card(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
@@ -176,6 +256,7 @@ fun HistoryTab(
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+
                                 if (latestRecord != null) {
                                     Text(
                                         text = dateFormat.format(Date(latestRecord.date)),
@@ -184,13 +265,17 @@ fun HistoryTab(
                                     )
                                 }
                             }
+
                             Spacer(modifier = Modifier.height(8.dp))
+
                             Text(
                                 text = latestRecord?.bmi?.toString() ?: "-",
                                 style = MaterialTheme.typography.headlineLarge,
                                 color = MaterialTheme.colorScheme.primary
                             )
+
                             Spacer(modifier = Modifier.height(4.dp))
+
                             if (latestRecord != null) {
                                 Surface(
                                     shape = RoundedCornerShape(20.dp),
@@ -214,7 +299,6 @@ fun HistoryTab(
                     }
                 }
 
-                // 변화량
                 if (bmiChange != null) {
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -233,7 +317,9 @@ fun HistoryTab(
                                 tint = changeColor,
                                 modifier = Modifier.size(16.dp)
                             )
+
                             Spacer(modifier = Modifier.width(4.dp))
+
                             Text(
                                 text = if (daysDiff != null && daysDiff >= 7) "1주일간 변화"
                                 else if (daysDiff != null) "${daysDiff}일간 변화"
@@ -242,6 +328,7 @@ fun HistoryTab(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+
                         Text(
                             text = if (isIncrease) "+$bmiChange" else "$bmiChange",
                             style = MaterialTheme.typography.bodyMedium,
@@ -260,6 +347,7 @@ fun HistoryTab(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                SummaryRow(label = "전체 기록 수", value = "${records.size}개")
                 SummaryRow(label = "최고 BMI", value = highestBmi?.toString() ?: "-")
                 SummaryRow(label = "최저 BMI", value = lowestBmi?.toString() ?: "-")
                 SummaryRow(label = "최근 상태", value = latestRecord?.category ?: "-")

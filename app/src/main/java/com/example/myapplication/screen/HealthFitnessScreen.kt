@@ -17,6 +17,7 @@ import com.example.myapplication.domain.BmiRecord
 fun HealthFitnessScreen() {
     var selectedTab by remember { mutableStateOf(BottomTab.CALCULATOR) }
     var latestRecord by remember { mutableStateOf<BmiRecord?>(null) }
+
     var records by remember {
         mutableStateOf<List<BmiRecord>>(
             listOf(
@@ -35,6 +36,7 @@ fun HealthFitnessScreen() {
             )
         )
     }
+
     var selectedActivity by remember { mutableStateOf<ActivityLevel?>(null) }
 
     // 입력값 상태를 여기서 관리 → 탭 전환해도 유지됨
@@ -112,7 +114,9 @@ fun HealthFitnessScreen() {
                     }
 
                     BottomTab.EXERCISE -> {
-                        ExerciseTab(latestRecord = latestRecord)
+                        ExerciseTab(
+                            latestRecord = latestRecord
+                        )
                     }
 
                     BottomTab.HISTORY -> {

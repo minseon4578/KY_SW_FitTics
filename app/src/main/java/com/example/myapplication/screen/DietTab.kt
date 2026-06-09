@@ -3,6 +3,9 @@ package com.example.myapplication.screen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -10,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.component.HealthCard
 import com.example.myapplication.domain.BmiRecord
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 enum class DietGoal(val label: String) {
     LOSE("체중 감량"),
@@ -17,198 +22,219 @@ enum class DietGoal(val label: String) {
     GAIN("체중 증량")
 }
 
-data class DietMealPlan(
-    val breakfast: String,
-    val breakfastCal: Int,
-    val breakfastProtein: Int,
-    val breakfastReason: String,
-    val lunch: String,
-    val lunchCal: Int,
-    val lunchProtein: Int,
-    val lunchReason: String,
-    val dinner: String,
-    val dinnerCal: Int,
-    val dinnerProtein: Int,
-    val dinnerReason: String,
-    val snack: String,
-    val snackCal: Int,
-    val snackProtein: Int,
-    val snackReason: String
-) {
-    val totalCal: Int get() = breakfastCal + lunchCal + dinnerCal + snackCal
+enum class RiceAmount(val label: String, val calorieAdjust: Int) {
+    LESS("적게", -100),
+    NORMAL("보통", 0),
+    MORE("많이", 150)
 }
 
-// 체중 증량 식단
+enum class ProteinAddition(
+    val label: String,
+    val calorieAdjust: Int,
+    val proteinAdjust: Int
+) {
+    NONE("없음", 0, 0),
+    EGG("계란", 80, 6),
+    CHICKEN("닭가슴살", 120, 23),
+    PROTEIN("프로틴", 120, 20)
+}
+
+data class MealItem(
+    val name: String,
+    val calories: Int,
+    val protein: Int,
+    val reason: String
+)
+
+data class DietMealPlan(
+    val breakfast: MealItem,
+    val lunch: MealItem,
+    val dinner: MealItem,
+    val snack: MealItem
+)
+
 val gainPlans = listOf(
     DietMealPlan(
-        breakfast = "현미밥 + 스크램블에그 + 바나나 + 저지방우유",
-        breakfastCal = 550, breakfastProtein = 22,
-        breakfastReason = "탄수화물과 단백질을 함께 섭취해 체중 증가에 도움을 줍니다",
-        lunch = "잡곡밥 + 닭가슴살구이 + 된장찌개 + 나물 반찬",
-        lunchCal = 650, lunchProtein = 38,
-        lunchReason = "고단백 식단으로 근육량을 늘리는 데 효과적입니다",
-        dinner = "현미밥 + 소고기뭇국 + 두부조림 + 시금치나물",
-        dinnerCal = 600, dinnerProtein = 32,
-        dinnerReason = "양질의 단백질과 철분을 보충해줍니다",
-        snack = "고구마 + 그릭요거트 + 견과류 한 줌",
-        snackCal = 350, snackProtein = 12,
-        snackReason = "건강한 탄수화물과 지방으로 칼로리를 보충합니다"
+        breakfast = MealItem("김밥 1줄 + 삶은계란 2개 + 두유", 720, 30, "탄수화물과 단백질을 함께 보충하기 좋습니다"),
+        lunch = MealItem("학식 일반식 + 밥 보통량 + 계란후라이 추가", 850, 35, "기존 식사를 유지하면서 섭취량을 자연스럽게 늘릴 수 있습니다"),
+        dinner = MealItem("제육덮밥 + 된장국 또는 미소국", 850, 38, "증량에 필요한 열량을 확보하기 좋습니다"),
+        snack = MealItem("바나나 + 프로틴 음료 또는 우유", 300, 22, "부족한 칼로리와 단백질을 간단히 채울 수 있습니다")
     ),
     DietMealPlan(
-        breakfast = "오트밀 + 삶은 달걀 2개 + 블루베리 + 두유",
-        breakfastCal = 500, breakfastProtein = 20,
-        breakfastReason = "소화가 잘 되는 탄수화물로 하루를 시작합니다",
-        lunch = "보리밥 + 생선구이 + 콩나물국 + 나물 반찬",
-        lunchCal = 620, lunchProtein = 35,
-        lunchReason = "생선의 양질의 단백질과 오메가3를 섭취합니다",
-        dinner = "잡곡밥 + 닭곰탕 + 계란찜 + 깻잎나물",
-        dinnerCal = 580, dinnerProtein = 30,
-        dinnerReason = "담백한 단백질로 소화 부담 없이 영양을 보충합니다",
-        snack = "통밀빵 + 저지방우유 + 사과",
-        snackCal = 380, snackProtein = 10,
-        snackReason = "식사 사이 공복을 채워 체중 증가를 돕습니다"
+        breakfast = MealItem("토스트 2장 + 스크램블에그 + 우유", 620, 26, "준비 시간이 짧고 아침에 부담 없이 먹기 좋습니다"),
+        lunch = MealItem("돈가스 정식 + 샐러드 + 밥", 950, 35, "활동량이 많은 날 에너지를 충분히 채울 수 있습니다"),
+        dinner = MealItem("불고기덮밥 + 김치 + 계란찜", 820, 40, "탄수화물과 단백질 균형이 좋습니다"),
+        snack = MealItem("그릭요거트 + 견과류 한 줌", 320, 18, "양은 적어도 칼로리와 단백질을 보충하기 좋습니다")
     ),
     DietMealPlan(
-        breakfast = "고구마 + 삶은 달걀 2개 + 딸기 + 저지방 요거트",
-        breakfastCal = 480, breakfastProtein = 18,
-        breakfastReason = "천천히 소화되는 탄수화물로 포만감을 유지합니다",
-        lunch = "현미밥 + 소고기미역국 + 두부 + 버섯볶음",
-        lunchCal = 600, lunchProtein = 33,
-        lunchReason = "소고기와 두부로 단백질을 이중으로 보충합니다",
-        dinner = "잡곡밥 + 삼치구이 + 된장찌개 + 무나물",
-        dinnerCal = 620, dinnerProtein = 34,
-        dinnerReason = "지방과 단백질이 풍부한 생선으로 체중 증가에 도움을 줍니다",
-        snack = "바나나 + 두유 + 견과류 한 줌",
-        snackCal = 340, snackProtein = 11,
-        snackReason = "칼로리가 높은 간식으로 하루 섭취량을 채웁니다"
+        breakfast = MealItem("삼각김밥 2개 + 삶은계란 1개 + 두유", 680, 24, "편의점에서도 쉽게 챙길 수 있는 현실적인 아침입니다"),
+        lunch = MealItem("돼지고기 김치찌개 + 밥 + 계란말이", 850, 38, "일반 식당에서 쉽게 먹을 수 있고 단백질 보충도 가능합니다"),
+        dinner = MealItem("닭갈비덮밥 또는 치킨마요덮밥 + 샐러드", 900, 42, "체중 증가에 필요한 열량을 확보하기 쉽습니다"),
+        snack = MealItem("고구마 + 우유", 300, 10, "운동 전후 간식으로 부담 없이 먹기 좋습니다")
     )
 )
 
-// 체중 유지 식단
 val maintainPlans = listOf(
     DietMealPlan(
-        breakfast = "통밀빵 + 스크램블에그 + 방울토마토 + 저지방우유",
-        breakfastCal = 420, breakfastProtein = 18,
-        breakfastReason = "균형 잡힌 탄단지로 하루를 시작합니다",
-        lunch = "현미밥 + 생선구이 + 콩나물국 + 나물 반찬",
-        lunchCal = 530, lunchProtein = 28,
-        lunchReason = "균형 잡힌 한식으로 체중을 유지합니다",
-        dinner = "잡곡밥 소량 + 닭가슴살구이 + 된장찌개 + 브로콜리무침",
-        dinnerCal = 480, dinnerProtein = 30,
-        dinnerReason = "저녁은 탄수화물을 줄이고 단백질 위주로 먹습니다",
-        snack = "삶은 달걀 + 사과",
-        snackCal = 200, snackProtein = 8,
-        snackReason = "가볍게 단백질과 비타민을 보충합니다"
+        breakfast = MealItem("삼각김밥 1개 + 삶은계란 1개 + 두유", 430, 19, "바쁜 아침에도 쉽게 챙길 수 있는 균형식입니다"),
+        lunch = MealItem("학식 일반식 + 밥 보통량 + 국 + 반찬", 620, 26, "현실적으로 체중을 유지하기 좋습니다"),
+        dinner = MealItem("김치찌개 + 밥 반 공기 + 계란말이", 520, 26, "포만감과 단백질을 함께 챙길 수 있습니다"),
+        snack = MealItem("바나나 또는 그릭요거트", 150, 8, "과식 없이 가볍게 에너지를 보충할 수 있습니다")
     ),
     DietMealPlan(
-        breakfast = "오트밀 + 삶은 달걀 2개 + 블루베리",
-        breakfastCal = 380, breakfastProtein = 16,
-        breakfastReason = "항산화 성분과 단백질로 건강하게 시작합니다",
-        lunch = "보리밥 + 닭가슴살 샐러드 + 순두부찌개 + 오이무침",
-        lunchCal = 510, lunchProtein = 32,
-        lunchReason = "고단백 저칼로리 식단으로 체중을 유지합니다",
-        dinner = "현미밥 소량 + 연두부 + 삼치구이 + 시금치나물",
-        dinnerCal = 460, dinnerProtein = 26,
-        dinnerReason = "소화가 잘 되는 식품으로 가볍게 마무리합니다",
-        snack = "그릭요거트 + 키위",
-        snackCal = 190, snackProtein = 9,
-        snackReason = "프로바이오틱스와 비타민C를 보충합니다"
+        breakfast = MealItem("토스트 1장 + 우유 또는 두유", 330, 14, "꾸준히 먹기 쉬운 아침입니다"),
+        lunch = MealItem("비빔밥 + 계란 추가", 650, 25, "채소, 밥, 단백질이 한 그릇에 들어 있어 균형이 좋습니다"),
+        dinner = MealItem("된장찌개 + 밥 반 공기 + 두부 또는 생선구이", 560, 33, "체중 유지에 적합한 일반식입니다"),
+        snack = MealItem("삶은계란 1개 + 과일", 180, 8, "단백질과 비타민을 부담 없이 보충할 수 있습니다")
     ),
     DietMealPlan(
-        breakfast = "고구마 + 삶은 달걀 2개 + 저지방 요거트",
-        breakfastCal = 400, breakfastProtein = 17,
-        breakfastReason = "혈당을 안정적으로 유지하며 시작합니다",
-        lunch = "잡곡밥 + 소고기미역국 + 두부 + 버섯볶음",
-        lunchCal = 520, lunchProtein = 30,
-        lunchReason = "철분과 단백질을 균형 있게 섭취합니다",
-        dinner = "현미밥 소량 + 북어국 + 계란찜 + 깻잎나물",
-        dinnerCal = 440, dinnerProtein = 25,
-        dinnerReason = "저칼로리 고단백으로 저녁을 마무리합니다",
-        snack = "바나나 + 두유",
-        snackCal = 210, snackProtein = 7,
-        snackReason = "에너지를 보충하고 포만감을 유지합니다"
+        breakfast = MealItem("편의점 샌드위치 + 아메리카노", 380, 16, "학교나 출근길에 쉽게 구할 수 있습니다"),
+        lunch = MealItem("제육볶음 정식 + 밥 반~보통량", 720, 35, "단백질과 탄수화물 균형이 좋은 편입니다"),
+        dinner = MealItem("국밥 + 밥 반 공기 + 김치", 600, 28, "밥 양만 조절하면 유지식으로 활용 가능합니다"),
+        snack = MealItem("프로틴 음료 또는 두유", 160, 18, "단백질이 부족한 날 간단히 보충할 수 있습니다")
     )
 )
 
-// 체중 감량 식단
 val losePlans = listOf(
     DietMealPlan(
-        breakfast = "오트밀 + 삶은 달걀 2개 + 방울토마토",
-        breakfastCal = 300, breakfastProtein = 18,
-        breakfastReason = "포만감이 오래 가고 혈당을 안정시킵니다",
-        lunch = "현미밥 소량 + 닭가슴살구이 + 미역국 + 브로콜리무침",
-        lunchCal = 380, lunchProtein = 35,
-        lunchReason = "고단백 저칼로리로 근육을 유지하며 체중을 줄입니다",
-        dinner = "고구마 + 연두부 + 황태구이 + 나물 반찬",
-        dinnerCal = 320, dinnerProtein = 24,
-        dinnerReason = "밥 없이도 포만감을 주는 건강한 저녁입니다",
-        snack = "오이스틱 + 삶은 달걀",
-        snackCal = 120, snackProtein = 8,
-        snackReason = "칼로리 부담 없이 단백질을 보충합니다"
+        breakfast = MealItem("삼각김밥 1개 + 삶은계란 1개", 330, 13, "아침을 거르지 않으면서 점심 과식을 줄이는 데 도움이 됩니다"),
+        lunch = MealItem("학식 일반식 + 밥 반 공기 + 단백질 반찬 위주", 520, 30, "평소 식사를 유지하되 밥 양을 줄입니다"),
+        dinner = MealItem("김치찌개 또는 된장찌개 + 밥 반 공기 + 두부", 450, 24, "일반식에서 탄수화물 양만 조절합니다"),
+        snack = MealItem("그릭요거트 또는 바나나 반 개", 120, 8, "폭식을 막고 공복감을 줄이는 데 좋습니다")
     ),
     DietMealPlan(
-        breakfast = "고구마 + 삶은 달걀 2개 + 토마토",
-        breakfastCal = 290, breakfastProtein = 16,
-        breakfastReason = "혈당을 천천히 올려 식욕을 억제합니다",
-        lunch = "현미밥 소량 + 참치샐러드 + 순두부찌개 + 숙주나물",
-        lunchCal = 370, lunchProtein = 30,
-        lunchReason = "채소와 단백질로 칼로리 없이 포만감을 줍니다",
-        dinner = "단호박찜 + 닭가슴살구이 + 콩나물무침 + 시금치나물",
-        dinnerCal = 310, dinnerProtein = 28,
-        dinnerReason = "밥 없이 채소와 단백질만으로 구성한 저칼로리 저녁입니다",
-        snack = "방울토마토 + 삶은 메추리알",
-        snackCal = 110, snackProtein = 7,
-        snackReason = "100kcal 이하의 가벼운 간식으로 공복을 해소합니다"
+        breakfast = MealItem("삶은계란 2개 + 두유", 300, 20, "단백질 위주로 시작해 포만감을 오래 유지합니다"),
+        lunch = MealItem("비빔밥 + 밥 조금 덜기 + 계란 추가", 600, 25, "채소와 단백질을 챙기면서 열량을 조절할 수 있습니다"),
+        dinner = MealItem("닭가슴살 샐러드 + 고구마 작은 것 1개", 430, 35, "저녁 열량을 낮추면서 단백질을 확보할 수 있습니다"),
+        snack = MealItem("방울토마토 또는 오이 + 삶은계란", 120, 8, "칼로리 부담을 줄이면서 허기를 달랠 수 있습니다")
     ),
     DietMealPlan(
-        breakfast = "오트밀 + 두부구이 + 블루베리",
-        breakfastCal = 310, breakfastProtein = 17,
-        breakfastReason = "항산화 성분과 단백질로 건강하게 시작합니다",
-        lunch = "현미밥 소량 + 북어국 + 계란찜 + 오이무침",
-        lunchCal = 360, lunchProtein = 28,
-        lunchReason = "북어의 고단백으로 포만감을 높이고 칼로리를 낮춥니다",
-        dinner = "고구마 + 두부조림 + 황태구이 + 깻잎나물",
-        dinnerCal = 330, dinnerProtein = 26,
-        dinnerReason = "식물성 단백질과 생선으로 균형 있게 마무리합니다",
-        snack = "당근스틱 + 그릭요거트",
-        snackCal = 115, snackProtein = 8,
-        snackReason = "식이섬유와 단백질로 배고픔을 건강하게 해소합니다"
+        breakfast = MealItem("편의점 샌드위치 반쪽~1개 + 아메리카노", 350, 14, "현실적으로 구하기 쉽고 과한 아침을 피할 수 있습니다"),
+        lunch = MealItem("국밥 + 밥 반 공기 + 건더기 위주", 600, 30, "외식 상황에서도 감량식으로 활용 가능합니다"),
+        dinner = MealItem("순두부찌개 + 밥 반 공기", 450, 24, "포만감이 높고 단백질 섭취도 가능합니다"),
+        snack = MealItem("프로틴 음료 또는 무가당 요거트", 160, 18, "단백질을 보충하면서 불필요한 간식을 줄일 수 있습니다")
     )
 )
 
-fun getDefaultGoal(category: String): DietGoal {
-    return when (category) {
-        "저체중" -> DietGoal.GAIN
-        "정상"  -> DietGoal.MAINTAIN
-        "과체중" -> DietGoal.LOSE
-        else   -> DietGoal.LOSE
-    }
+fun getDefaultGoal(category: String): DietGoal = when (category) {
+    "저체중" -> DietGoal.GAIN
+    "정상" -> DietGoal.MAINTAIN
+    "과체중" -> DietGoal.LOSE
+    else -> DietGoal.LOSE
 }
 
-fun getPlansByGoal(goal: DietGoal): List<DietMealPlan> {
-    return when (goal) {
-        DietGoal.GAIN     -> gainPlans
-        DietGoal.MAINTAIN -> maintainPlans
-        DietGoal.LOSE     -> losePlans
-    }
+fun getPlansByGoal(goal: DietGoal): List<DietMealPlan> = when (goal) {
+    DietGoal.GAIN -> gainPlans
+    DietGoal.MAINTAIN -> maintainPlans
+    DietGoal.LOSE -> losePlans
 }
 
 fun getCarbRatio(goal: DietGoal): Int = when (goal) {
-    DietGoal.GAIN     -> 60
-    DietGoal.MAINTAIN -> 55
-    DietGoal.LOSE     -> 40
+    DietGoal.GAIN -> 55
+    DietGoal.MAINTAIN -> 50
+    DietGoal.LOSE -> 40
 }
 
 fun getProteinRatio(goal: DietGoal): Int = when (goal) {
-    DietGoal.GAIN     -> 20
-    DietGoal.MAINTAIN -> 20
-    DietGoal.LOSE     -> 35
+    DietGoal.GAIN -> 25
+    DietGoal.MAINTAIN -> 25
+    DietGoal.LOSE -> 35
 }
 
 fun getFatRatio(goal: DietGoal): Int = when (goal) {
-    DietGoal.GAIN     -> 20
+    DietGoal.GAIN -> 20
     DietGoal.MAINTAIN -> 25
-    DietGoal.LOSE     -> 25
+    DietGoal.LOSE -> 25
+}
+
+fun getTargetCalories(
+    latestRecord: BmiRecord,
+    tdee: Int?,
+    goal: DietGoal
+): Int {
+    val baseTdee = tdee ?: (latestRecord.bmr * 1.2).roundToInt()
+
+    return when (goal) {
+        DietGoal.GAIN -> baseTdee + 300
+        DietGoal.MAINTAIN -> baseTdee
+        DietGoal.LOSE -> (baseTdee - 500).coerceAtLeast(1200)
+    }
+}
+
+fun getTargetProtein(
+    latestRecord: BmiRecord,
+    goal: DietGoal
+): Int {
+    val weight = latestRecord.weightKg.toDoubleOrNull() ?: 70.0
+
+    val proteinPerKg = when (goal) {
+        DietGoal.GAIN -> 1.8
+        DietGoal.MAINTAIN -> 1.4
+        DietGoal.LOSE -> 1.6
+    }
+
+    return (weight * proteinPerKg).roundToInt()
+}
+
+fun getDefaultRiceAmount(
+    goal: DietGoal,
+    targetCalories: Int
+): RiceAmount {
+    return when {
+        goal == DietGoal.LOSE -> RiceAmount.LESS
+        goal == DietGoal.GAIN && targetCalories >= 2300 -> RiceAmount.MORE
+        goal == DietGoal.GAIN -> RiceAmount.NORMAL
+        goal == DietGoal.MAINTAIN && targetCalories < 1800 -> RiceAmount.LESS
+        goal == DietGoal.MAINTAIN && targetCalories >= 2300 -> RiceAmount.MORE
+        else -> RiceAmount.NORMAL
+    }
+}
+
+fun getAdjustedMealCalories(
+    baseCalories: Int,
+    mealType: String,
+    riceAmount: RiceAmount,
+    proteinAddition: ProteinAddition
+): Int {
+    val riceAdjust = if (mealType == "간식") 0 else riceAmount.calorieAdjust
+    return (baseCalories + riceAdjust + proteinAddition.calorieAdjust).coerceAtLeast(0)
+}
+
+fun getAdjustedMealProtein(
+    baseProtein: Int,
+    proteinAddition: ProteinAddition
+): Int {
+    return (baseProtein + proteinAddition.proteinAdjust).coerceAtLeast(0)
+}
+
+fun getPlanAdjustedCalories(
+    plan: DietMealPlan,
+    riceAmount: RiceAmount,
+    proteinAddition: ProteinAddition
+): Int {
+    val breakfast = getAdjustedMealCalories(plan.breakfast.calories, "아침", riceAmount, proteinAddition)
+    val lunch = getAdjustedMealCalories(plan.lunch.calories, "점심", riceAmount, proteinAddition)
+    val dinner = getAdjustedMealCalories(plan.dinner.calories, "저녁", riceAmount, proteinAddition)
+    val snack = getAdjustedMealCalories(plan.snack.calories, "간식", riceAmount, proteinAddition)
+
+    return breakfast + lunch + dinner + snack
+}
+
+fun getSortedPlansByTargetCalories(
+    plans: List<DietMealPlan>,
+    targetCalories: Int,
+    riceAmount: RiceAmount,
+    proteinAddition: ProteinAddition
+): List<DietMealPlan> {
+    return plans.sortedBy { plan ->
+        abs(
+            getPlanAdjustedCalories(
+                plan = plan,
+                riceAmount = riceAmount,
+                proteinAddition = proteinAddition
+            ) - targetCalories
+        )
+    }
 }
 
 @Composable
@@ -221,8 +247,25 @@ fun DietTab(
     }
 
     var selectedGoal by remember(latestRecord) {
-        mutableStateOf(
-            latestRecord?.let { getDefaultGoal(it.category) } ?: DietGoal.MAINTAIN
+        mutableStateOf(latestRecord?.let { getDefaultGoal(it.category) } ?: DietGoal.MAINTAIN)
+    }
+
+    var selectedPlanOffset by remember { mutableStateOf(0) }
+
+    var selectedRiceAmount by remember(selectedGoal) {
+        mutableStateOf<RiceAmount?>(null)
+    }
+
+    var selectedProteinAddition by remember {
+        mutableStateOf(ProteinAddition.NONE)
+    }
+
+    val checkedMeals = remember(selectedGoal, selectedPlanOffset, selectedRiceAmount, selectedProteinAddition) {
+        mutableStateMapOf(
+            "아침" to false,
+            "점심" to false,
+            "저녁" to false,
+            "간식" to false
         )
     }
 
@@ -233,7 +276,6 @@ fun DietTab(
             .padding(20.dp)
             .padding(bottom = 48.dp)
     ) {
-        // 목표 선택 카드
         HealthCard(modifier = Modifier.fillMaxWidth()) {
             Text(text = "목표 설정", style = MaterialTheme.typography.titleMedium)
 
@@ -254,7 +296,12 @@ fun DietTab(
             ) {
                 DietGoal.entries.forEach { goal ->
                     Button(
-                        onClick = { selectedGoal = goal },
+                        onClick = {
+                            selectedGoal = goal
+                            selectedPlanOffset = 0
+                            selectedRiceAmount = null
+                            selectedProteinAddition = ProteinAddition.NONE
+                        },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (selectedGoal == goal)
@@ -279,80 +326,8 @@ fun DietTab(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 내 기준 정보 카드
-        if (latestRecord != null) {
-            val carbRatio = getCarbRatio(selectedGoal)
-            val proteinRatio = getProteinRatio(selectedGoal)
-            val fatRatio = getFatRatio(selectedGoal)
-
+        if (latestRecord == null) {
             HealthCard(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "오늘 내 기준 정보",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = when (selectedGoal) {
-                            DietGoal.GAIN -> "체중 증량 기준 섭취량"
-                            DietGoal.MAINTAIN -> "하루 권장 섭취량"
-                            DietGoal.LOSE -> "감량 기준 섭취량"
-                        },
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        text = "${
-                            when (selectedGoal) {
-                                DietGoal.GAIN -> (tdee ?: (latestRecord.bmr * 1.2).toInt()) + 300
-                                DietGoal.MAINTAIN -> tdee ?: (latestRecord.bmr * 1.2).toInt()
-                                DietGoal.LOSE -> (tdee ?: (latestRecord.bmr * 1.2).toInt()) - 500
-                            }
-                        } kcal",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                HorizontalDivider()
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    NutritionRatioItem(label = "탄수화물", ratio = carbRatio)
-                    NutritionRatioItem(label = "단백질", ratio = proteinRatio)
-                    NutritionRatioItem(label = "지방", ratio = fatRatio)
-                }
-
-                if (tdee == null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "계산 탭에서 활동 수준을 선택하면 더 정확해져요",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-        }
-
-        // 식단 추천 카드
-        HealthCard(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "식단 추천", style = MaterialTheme.typography.titleLarge)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (latestRecord == null) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -365,66 +340,294 @@ fun DietTab(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyLarge
                     )
+
                     Spacer(modifier = Modifier.height(8.dp))
+
                     Text(
                         text = "BMI, BMR, 체지방률을 바탕으로 식단을 추천합니다",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
-            } else {
-                val plans = getPlansByGoal(selectedGoal)
-                val todayPlan = plans[todayIndex % plans.size]
-                var showCalories by remember { mutableStateOf(true) }
+            }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "추천 식단 예시", style = MaterialTheme.typography.titleMedium)
-                    TextButton(onClick = { showCalories = !showCalories }) {
-                        Text(
-                            text = if (showCalories) "칼로리 숨기기" else "칼로리 보기",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
+            return@Column
+        }
 
-                DietMealRow(
-                    title = "아침",
-                    description = todayPlan.breakfast,
-                    reason = todayPlan.breakfastReason,
-                    cal = todayPlan.breakfastCal,
-                    protein = todayPlan.breakfastProtein,
-                    showCal = showCalories
+        val targetCalories = getTargetCalories(latestRecord, tdee, selectedGoal)
+        val targetProtein = getTargetProtein(latestRecord, selectedGoal)
+        val effectiveRiceAmount = selectedRiceAmount ?: getDefaultRiceAmount(selectedGoal, targetCalories)
 
-                )
-                DietMealRow(
-                    title = "점심",
-                    description = todayPlan.lunch,
-                    reason = todayPlan.lunchReason,
-                    cal = todayPlan.lunchCal,
-                    protein = todayPlan.lunchProtein,
-                    showCal = showCalories
-                )
-                DietMealRow(
-                    title = "저녁",
-                    description = todayPlan.dinner,
-                    reason = todayPlan.dinnerReason,
-                    cal = todayPlan.dinnerCal,
-                    protein = todayPlan.dinnerProtein,
-                    showCal = showCalories
-                )
-                DietMealRow(
-                    title = "간식",
-                    description = todayPlan.snack,
-                    reason = todayPlan.snackReason,
-                    cal = todayPlan.snackCal,
-                    protein = todayPlan.snackProtein,
-                    showCal = showCalories
+        val plans = getSortedPlansByTargetCalories(
+            plans = getPlansByGoal(selectedGoal),
+            targetCalories = targetCalories,
+            riceAmount = effectiveRiceAmount,
+            proteinAddition = selectedProteinAddition
+        )
+
+        val selectedPlanIndex = (todayIndex + selectedPlanOffset) % plans.size
+        val todayPlan = plans[selectedPlanIndex]
+
+        val breakfastCal = getAdjustedMealCalories(todayPlan.breakfast.calories, "아침", effectiveRiceAmount, selectedProteinAddition)
+        val lunchCal = getAdjustedMealCalories(todayPlan.lunch.calories, "점심", effectiveRiceAmount, selectedProteinAddition)
+        val dinnerCal = getAdjustedMealCalories(todayPlan.dinner.calories, "저녁", effectiveRiceAmount, selectedProteinAddition)
+        val snackCal = getAdjustedMealCalories(todayPlan.snack.calories, "간식", effectiveRiceAmount, selectedProteinAddition)
+
+        val breakfastProtein = getAdjustedMealProtein(todayPlan.breakfast.protein, selectedProteinAddition)
+        val lunchProtein = getAdjustedMealProtein(todayPlan.lunch.protein, selectedProteinAddition)
+        val dinnerProtein = getAdjustedMealProtein(todayPlan.dinner.protein, selectedProteinAddition)
+        val snackProtein = getAdjustedMealProtein(todayPlan.snack.protein, selectedProteinAddition)
+
+        val expectedCalories = breakfastCal + lunchCal + dinnerCal + snackCal
+        val expectedProtein = breakfastProtein + lunchProtein + dinnerProtein + snackProtein
+
+        val actualCalories =
+            (if (checkedMeals["아침"] == true) breakfastCal else 0) +
+                    (if (checkedMeals["점심"] == true) lunchCal else 0) +
+                    (if (checkedMeals["저녁"] == true) dinnerCal else 0) +
+                    (if (checkedMeals["간식"] == true) snackCal else 0)
+
+        val actualProtein =
+            (if (checkedMeals["아침"] == true) breakfastProtein else 0) +
+                    (if (checkedMeals["점심"] == true) lunchProtein else 0) +
+                    (if (checkedMeals["저녁"] == true) dinnerProtein else 0) +
+                    (if (checkedMeals["간식"] == true) snackProtein else 0)
+
+        val expectedCalorieRate = ((expectedCalories.toDouble() / targetCalories) * 100).roundToInt()
+        val expectedProteinRate = ((expectedProtein.toDouble() / targetProtein) * 100).roundToInt()
+        val actualCalorieRate = ((actualCalories.toDouble() / targetCalories) * 100).roundToInt()
+        val actualProteinRate = ((actualProtein.toDouble() / targetProtein) * 100).roundToInt()
+        val calorieGap = expectedCalories - targetCalories
+
+        HealthCard(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "오늘 내 기준 정보", style = MaterialTheme.typography.titleMedium)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "목표 섭취량: $targetCalories kcal",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.titleSmall
+            )
+
+            Text(
+                text = "목표 단백질: ${targetProtein}g",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                NutritionRatioItem(label = "탄수화물", ratio = getCarbRatio(selectedGoal))
+                NutritionRatioItem(label = "단백질", ratio = getProteinRatio(selectedGoal))
+                NutritionRatioItem(label = "지방", ratio = getFatRatio(selectedGoal))
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(text = "추천 식단 기준 영양값", style = MaterialTheme.typography.titleSmall)
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "칼로리: $expectedCalories / $targetCalories kcal (${expectedCalorieRate}%)",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Text(
+                text = "단백질: $expectedProtein / ${targetProtein}g (${expectedProteinRate}%)",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = if (calorieGap > 0)
+                    "목표보다 약 ${calorieGap} kcal 높습니다"
+                else
+                    "목표보다 약 ${abs(calorieGap)} kcal 낮습니다",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(text = "체크한 실제 섭취", style = MaterialTheme.typography.titleSmall)
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "칼로리: $actualCalories / $targetCalories kcal (${actualCalorieRate}%)",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Text(
+                text = "단백질: $actualProtein / ${targetProtein}g (${actualProteinRate}%)",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            if (tdee == null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "계산 탭에서 활동 수준을 선택하면 더 정확해져요",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        HealthCard(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "오늘 식단 설정", style = MaterialTheme.typography.titleMedium)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "밥 양",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                RiceAmount.entries.forEach { rice ->
+                    FilterChip(
+                        selected = effectiveRiceAmount == rice,
+                        onClick = {
+                            selectedRiceAmount = rice
+                            selectedPlanOffset = 0
+                        },
+                        label = {
+                            Text(
+                                text = rice.label,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = "단백질 보충",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ProteinAddition.entries.forEach { protein ->
+                    FilterChip(
+                        selected = selectedProteinAddition == protein,
+                        onClick = {
+                            selectedProteinAddition = protein
+                            selectedPlanOffset = 0
+                        },
+                        label = {
+                            Text(
+                                text = protein.label,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        HealthCard(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "현실적인 추천 식단", style = MaterialTheme.typography.titleLarge)
+
+                TextButton(
+                    onClick = {
+                        selectedPlanOffset = (selectedPlanOffset + 1) % plans.size
+                    }
+                ) {
+                    Text(
+                        text = "다른 식단 보기",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "목표 칼로리에 가까운 식단부터 보여줍니다",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            DietMealRow(
+                title = "아침",
+                meal = todayPlan.breakfast,
+                cal = breakfastCal,
+                protein = breakfastProtein,
+                checked = checkedMeals["아침"] == true,
+                onCheckedChange = { checkedMeals["아침"] = it }
+            )
+
+            DietMealRow(
+                title = "점심",
+                meal = todayPlan.lunch,
+                cal = lunchCal,
+                protein = lunchProtein,
+                checked = checkedMeals["점심"] == true,
+                onCheckedChange = { checkedMeals["점심"] = it }
+            )
+
+            DietMealRow(
+                title = "저녁",
+                meal = todayPlan.dinner,
+                cal = dinnerCal,
+                protein = dinnerProtein,
+                checked = checkedMeals["저녁"] == true,
+                onCheckedChange = { checkedMeals["저녁"] = it }
+            )
+
+            DietMealRow(
+                title = "간식",
+                meal = todayPlan.snack,
+                cal = snackCal,
+                protein = snackProtein,
+                checked = checkedMeals["간식"] == true,
+                onCheckedChange = { checkedMeals["간식"] = it }
+            )
         }
     }
 }
@@ -440,6 +643,7 @@ fun NutritionRatioItem(
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
         )
+
         Text(
             text = label,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -451,37 +655,65 @@ fun NutritionRatioItem(
 @Composable
 fun DietMealRow(
     title: String,
-    description: String,
-    reason: String,
+    meal: MealItem,
     cal: Int,
     protein: Int,
-    showCal: Boolean = true
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        Text(text = title, style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = description,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        if (showCal) {
-            Text(
-                text = "$cal kcal · 단백질 ${protein}g",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
-            )
-            Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = title, style = MaterialTheme.typography.titleMedium)
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = meal.name,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "기준 영양값: 약 ${cal} kcal · 단백질 ${protein}g",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "✓ ${meal.reason}",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            IconButton(onClick = { onCheckedChange(!checked) }) {
+                Icon(
+                    imageVector = if (checked)
+                        Icons.Default.CheckCircle
+                    else
+                        Icons.Default.RadioButtonUnchecked,
+                    contentDescription = "식사 체크",
+                    tint = if (checked)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
-        Text(
-            text = "✓ $reason",
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.bodySmall
-        )
     }
 }
