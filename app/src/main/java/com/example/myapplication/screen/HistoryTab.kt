@@ -74,24 +74,6 @@ fun HistoryTab(
         .roundToInt()
         .coerceAtMost(100)
 
-    val bmiScore = when (latestRecord?.category) {
-        "정상" -> 20
-        "저체중" -> 14
-        "과체중" -> 12
-        else -> 10
-    }
-
-    val mealScore = (mealProgressPercent * 0.4).roundToInt()
-    val exerciseScore = (exerciseProgressPercent * 0.4).roundToInt()
-    val healthScore = (mealScore + exerciseScore + bmiScore).coerceIn(0, 100)
-
-    val activityGrade = when {
-        healthScore >= 85 -> "A"
-        healthScore >= 70 -> "B"
-        healthScore >= 50 -> "C"
-        else -> "-"
-    }
-
     val estimatedGoal = when (latestRecord?.category) {
         "저체중" -> "체중 증량"
         "정상" -> "체중 유지"
@@ -100,15 +82,29 @@ fun HistoryTab(
         else -> "-"
     }
 
+    val activityStatus = when {
+        todayMealCheckedCount == 0 && todayExerciseCompletedCount == 0 -> "기록 없음"
+        todayMealCheckedCount >= 3 && todayExerciseCompletedCount >= 2 -> "활동 양호"
+        todayMealCheckedCount >= 2 || todayExerciseCompletedCount >= 1 -> "기록 진행 중"
+        else -> "가볍게 시작"
+    }
+
     val coachMessage = when {
-        latestRecord == null -> "BMI를 계산하면 오늘의 건강 피드백이 표시됩니다."
-        healthScore >= 85 -> "오늘은 식단과 운동 흐름이 아주 좋습니다. 현재 루틴을 유지해도 좋습니다."
-        exerciseProgressPercent < 67 && mealProgressPercent >= 75 -> "식단은 잘 지키고 있습니다. 가벼운 운동을 조금 추가하면 점수가 더 올라갑니다."
-        mealProgressPercent < 50 && exerciseProgressPercent >= 67 -> "운동은 잘 진행 중입니다. 식사를 조금 더 체크하면 건강 리포트가 더 좋아집니다."
-        mealProgressPercent == 0 && exerciseProgressPercent == 0 -> "오늘은 아직 기록이 없습니다. 식사나 운동을 하나만 체크해도 리포트가 시작됩니다."
-        latestRecord.category == "저체중" -> "저체중 상태이므로 식사를 거르지 않고 단백질과 탄수화물을 함께 챙기는 것이 좋습니다."
-        latestRecord.category == "과체중" || latestRecord.category == "비만" -> "체중 관리가 필요한 상태이므로 식사 체크와 가벼운 유산소 운동을 함께 유지하는 것이 좋습니다."
-        else -> "오늘 기록이 시작됐습니다. 식단과 운동을 조금씩 채우면 건강 점수가 올라갑니다."
+        latestRecord == null -> "BMI를 계산하면 오늘의 활동 리포트가 표시됩니다."
+        todayMealCheckedCount == 0 && todayExerciseCompletedCount == 0 ->
+            "오늘은 아직 식사나 운동 기록이 없습니다. 하나만 체크해도 리포트가 시작됩니다."
+        todayMealCheckedCount >= 3 && todayExerciseCompletedCount >= 2 ->
+            "오늘은 식사와 운동 기록이 모두 안정적으로 쌓이고 있습니다."
+        todayMealCheckedCount >= 2 && todayExerciseCompletedCount == 0 ->
+            "식사 기록은 잘 남기고 있습니다. 운동을 못 한 날도 기록 자체는 충분히 의미가 있습니다."
+        todayMealCheckedCount == 0 && todayExerciseCompletedCount >= 1 ->
+            "운동 기록은 남아 있습니다. 식사를 체크하면 하루 흐름을 더 잘 볼 수 있습니다."
+        latestRecord.category == "저체중" ->
+            "저체중 상태이므로 식사를 거르지 않고 꾸준히 기록하는 것이 좋습니다."
+        latestRecord.category == "과체중" || latestRecord.category == "비만" ->
+            "체중 관리가 필요한 상태이므로 무리한 운동보다 꾸준한 식사와 활동 기록이 중요합니다."
+        else ->
+            "오늘 기록이 시작됐습니다. 식사와 운동을 부담 없이 이어가면 됩니다."
     }
 
     Column(
@@ -122,7 +118,7 @@ fun HistoryTab(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = Icons.Default.Assessment, contentDescription = null)
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = "오늘 건강 리포트", style = MaterialTheme.typography.titleLarge)
+                Text(text = "오늘 활동 리포트", style = MaterialTheme.typography.titleLarge)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -151,13 +147,13 @@ fun HistoryTab(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "${healthScore}점",
+                    text = activityStatus,
                     color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.headlineLarge
+                    style = MaterialTheme.typography.headlineSmall
                 )
 
                 Text(
-                    text = "오늘 건강 점수",
+                    text = "오늘 기록 상태",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -185,17 +181,18 @@ fun HistoryTab(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            SummaryRow(label = "식사 체크", value = "$todayMealCheckedCount / 4회")
-            SummaryRow(label = "식단 진행률", value = "$mealProgressPercent%")
-            SummaryRow(label = "운동 완료", value = "$todayExerciseCompletedCount / 3개")
-            SummaryRow(label = "운동 목표 달성률", value = "$exerciseProgressPercent%")
+            SummaryRow(label = "식사 기록", value = "$todayMealCheckedCount / 4회")
+            SummaryRow(label = "식사 기록률", value = "$mealProgressPercent%")
+            SummaryRow(label = "운동 기록", value = "$todayExerciseCompletedCount / 3개")
+            SummaryRow(label = "운동 기록률", value = "$exerciseProgressPercent%")
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            SummaryRow(label = "식단 점수", value = "$mealScore / 40점")
-            SummaryRow(label = "운동 점수", value = "$exerciseScore / 40점")
-            SummaryRow(label = "BMI 점수", value = "$bmiScore / 20점")
-            SummaryRow(label = "오늘 활동 등급", value = activityGrade)
+            Text(
+                text = "점수보다 오늘 남긴 기록을 기준으로 하루 흐름을 보여줍니다.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
         Spacer(modifier = Modifier.height(20.dp))
