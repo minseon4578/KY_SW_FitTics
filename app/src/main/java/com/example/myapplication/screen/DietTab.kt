@@ -302,11 +302,11 @@ fun DietTab(
                 Text(
                     text = "BMI ${latestRecord.bmi} (${latestRecord.category}) 기준 기본값이 설정되었습니다",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -356,7 +356,7 @@ fun DietTab(
                     Text(
                         text = "신체 데이터를 먼저 계산해주세요",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -391,6 +391,7 @@ fun DietTab(
         val lunchCal = getAdjustedMealCalories(todayPlan.lunch.calories, "점심", effectiveRiceAmount, selectedProteinAddition)
         val dinnerCal = getAdjustedMealCalories(todayPlan.dinner.calories, "저녁", effectiveRiceAmount, selectedProteinAddition)
         val snackCal = getAdjustedMealCalories(todayPlan.snack.calories, "간식", effectiveRiceAmount, selectedProteinAddition)
+
         val breakfastProtein = getAdjustedMealProtein(todayPlan.breakfast.protein, selectedProteinAddition)
         val lunchProtein = getAdjustedMealProtein(todayPlan.lunch.protein, selectedProteinAddition)
         val dinnerProtein = getAdjustedMealProtein(todayPlan.dinner.protein, selectedProteinAddition)
@@ -405,6 +406,7 @@ fun DietTab(
         val actualLunchCal = displayLunch?.first ?: lunchCal
         val actualDinnerCal = displayDinner?.first ?: dinnerCal
         val actualSnackCal = displaySnack?.first ?: snackCal
+
         val actualBreakfastProtein = displayBreakfast?.second ?: breakfastProtein
         val actualLunchProtein = displayLunch?.second ?: lunchProtein
         val actualDinnerProtein = displayDinner?.second ?: dinnerProtein
@@ -432,29 +434,35 @@ fun DietTab(
         val calorieGap = expectedCalories - adjustedTargetCalories
 
         HealthCard(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "오늘 내 기준 정보", style = MaterialTheme.typography.titleMedium)
+            Text(text = "오늘 내 기준 정보", style = MaterialTheme.typography.titleLarge)
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = "목표 섭취량: $adjustedTargetCalories kcal",
                 color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.titleSmall
+                style = MaterialTheme.typography.titleMedium
             )
+
             Text(
                 text = "목표 단백질: ${adjustedTargetProtein}g",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyLarge
             )
+
             if (exerciseBurnedCalories > 0) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "운동 ${exerciseBurnedCalories} kcal 소모 반영 → +${exerciseExtraCalories} kcal, 단백질 +${exerciseExtraProtein}g",
                     color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
+
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(12.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -463,43 +471,65 @@ fun DietTab(
                 NutritionRatioItem(label = "단백질", ratio = getProteinRatio(selectedGoal))
                 NutritionRatioItem(label = "지방", ratio = getFatRatio(selectedGoal))
             }
+
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(12.dp))
-            Text(text = "추천 식단 기준 영양값", style = MaterialTheme.typography.titleSmall)
+
+            Text(text = "추천 식단 예상 영양값", style = MaterialTheme.typography.titleMedium)
+
             Spacer(modifier = Modifier.height(6.dp))
+
             Text(
                 text = "칼로리: $expectedCalories / $adjustedTargetCalories kcal (${expectedCalorieRate}%)",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyMedium
             )
+
             Text(
                 text = "단백질: $expectedProtein / ${adjustedTargetProtein}g (${expectedProteinRate}%)",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyMedium
             )
+
             Spacer(modifier = Modifier.height(4.dp))
+
             Text(
                 text = if (calorieGap > 0) "목표보다 약 ${calorieGap} kcal 높습니다"
                 else "목표보다 약 ${abs(calorieGap)} kcal 낮습니다",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyMedium
             )
+
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(12.dp))
-            Text(text = "체크한 실제 섭취", style = MaterialTheme.typography.titleSmall)
+
+            Text(text = "체크한 실제 섭취 기록", style = MaterialTheme.typography.titleMedium)
+
             Spacer(modifier = Modifier.height(6.dp))
+
             Text(
                 text = "칼로리: $actualCalories / $adjustedTargetCalories kcal (${actualCalorieRate}%)",
                 color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyMedium
             )
+
             Text(
                 text = "단백질: $actualProtein / ${adjustedTargetProtein}g (${actualProteinRate}%)",
                 color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyMedium
             )
+
+            if (mealCheckedCount > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "체크한 식사만 실제 섭취량과 기록 탭에 반영됩니다.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
             if (tdee == null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -513,14 +543,18 @@ fun DietTab(
         Spacer(modifier = Modifier.height(20.dp))
 
         HealthCard(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "오늘 식단 설정", style = MaterialTheme.typography.titleMedium)
+            Text(text = "오늘 식단 설정", style = MaterialTheme.typography.titleLarge)
+
             Spacer(modifier = Modifier.height(12.dp))
+
             Text(
                 text = "밥 양",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyMedium
             )
+
             Spacer(modifier = Modifier.height(6.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -539,13 +573,17 @@ fun DietTab(
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(14.dp))
+
             Text(
                 text = "단백질 보충",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyMedium
             )
+
             Spacer(modifier = Modifier.height(6.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -578,7 +616,8 @@ fun DietTab(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "현실적인 추천 식단", style = MaterialTheme.typography.titleLarge)
+                Text(text = "오늘 식사 기록", style = MaterialTheme.typography.titleLarge)
+
                 TextButton(
                     onClick = {
                         selectedPlanOffset = (selectedPlanOffset + 1) % plans.size
@@ -587,12 +626,23 @@ fun DietTab(
                     Text(text = "다른 식단 보기", style = MaterialTheme.typography.bodySmall)
                 }
             }
+
             Spacer(modifier = Modifier.height(4.dp))
+
             Text(
-                text = "목표 칼로리에 가까운 식단부터 보여줍니다",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
+                text = "오늘 ${mealCheckedCount}/4 식사 기록 완료",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyMedium
             )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "추천 식단을 참고하고 실제로 먹은 식사만 체크하세요.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
             Spacer(modifier = Modifier.height(12.dp))
 
             DietMealRow(
@@ -607,6 +657,7 @@ fun DietTab(
                     else lockedMeals.remove("아침")
                 }
             )
+
             DietMealRow(
                 title = "점심",
                 meal = displayLunch?.third ?: todayPlan.lunch,
@@ -619,6 +670,7 @@ fun DietTab(
                     else lockedMeals.remove("점심")
                 }
             )
+
             DietMealRow(
                 title = "저녁",
                 meal = displayDinner?.third ?: todayPlan.dinner,
@@ -631,6 +683,7 @@ fun DietTab(
                     else lockedMeals.remove("저녁")
                 }
             )
+
             DietMealRow(
                 title = "간식",
                 meal = displaySnack?.third ?: todayPlan.snack,
@@ -658,7 +711,7 @@ fun NutritionRatioItem(label: String, ratio: Int) {
         Text(
             text = label,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodyMedium
         )
     }
 }
@@ -675,7 +728,7 @@ fun DietMealRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 10.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -684,26 +737,44 @@ fun DietMealRow(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = title, style = MaterialTheme.typography.titleMedium)
+
                 Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
                     text = meal.name,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium
                 )
+
                 Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
                     text = "기준 영양값: 약 ${cal} kcal · 단백질 ${protein}g",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
+
                 Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
                     text = "✓ ${meal.reason}",
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodySmall
                 )
+
+                if (checked) {
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "먹은 식사로 기록되었습니다.",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
+
             Spacer(modifier = Modifier.width(8.dp))
+
             IconButton(onClick = { onCheckedChange(!checked) }) {
                 Icon(
                     imageVector = if (checked) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
